@@ -3,8 +3,10 @@
 
 #include <string>
 #include <fstream>
-#include <ctime>
 #include <iostream>
+#include <chrono>
+#include <iomanip>
+#include <sstream>
 
 #include "CpuMetric.h"
 #include "HttpRequestMetric.h"
@@ -17,18 +19,17 @@ private:
     std::string filename;
 
     std::string getCurrentTimestamp() {
-        std::time_t rawtime;
-        std::time(&rawtime);
-        std::string ts = std::ctime(&rawtime);
-        if (!ts.empty() && ts.back() == '\n') {
-            ts.pop_back();
-        }
-        return ts;
+        auto now = std::chrono::system_clock::now();
+        std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&currentTime), "%Y-%m-%d %H:%M:%S");
+        
+        return ss.str();
     }
 
 public:
-    MetricsCollector(const std::string& outputFilename) {
-        filename = outputFilename;
+    MetricsCollector(const std::string& outputFilename) : filename(outputFilename) {
     }
 
     CpuMetric& getCpuMetric() {
@@ -51,13 +52,13 @@ public:
 
         outFile << timestamp << " "
                 << cpuMetric.getName() << " "
-                << cpuMetric.getValueAsString();
-        outFile << std::endl;
+                << cpuMetric.getValueAsString()
+                << std::endl;
 
         outFile << timestamp << " "
                 << httpMetric.getName() << " "
-                << httpMetric.getValueAsString();
-        outFile << std::endl;
+                << httpMetric.getValueAsString()
+                << std::endl;
 
         cpuMetric.reset();
         httpMetric.reset();
